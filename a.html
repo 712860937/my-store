@@ -3,32 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>متجر البرق برو 🚀</title>
+    <title>متجر البرق 🚀</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #00d2ff; --secondary: #3a7bd5; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: auto; }
-        .card { background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding-top: 70px; text-align: center; }
+        /* شريط التنقل الجديد */
+        nav { background: #0f172a; padding: 15px; position: fixed; top: 0; width: 100%; z-index: 1000; display: flex; justify-content: center; gap: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        nav a { color: white; text-decoration: none; font-weight: bold; font-size: 14px; }
+        nav a:hover { color: var(--primary); }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+        .card { background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
         .card-content { padding: 20px; }
-        .card img.main-icon { width: 90px; height: 90px; border-radius: 22px; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.1); background: #eee; }
-        .install-btn { display: inline-flex; align-items: center; justify-content: center; width: 55px; height: 55px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border-radius: 50%; text-decoration: none; font-size: 22px; margin: 10px 0; transition: 0.3s; }
-        .screenshot-container { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 10px; scrollbar-width: thin; }
-        .screenshot-container img { height: 180px; border-radius: 10px; border: 1px solid #ddd; }
-        .details-toggle { display: block; padding: 15px; color: #3a7bd5; font-weight: bold; cursor: pointer; border-top: 1px solid #f0f0f0; background: #fafafa; }
-        .description { max-height: 0; overflow-y: auto; transition: max-height 0.4s ease-out; background: #fff; font-size: 14px; color: #555; line-height: 1.6; text-align: right; }
-        .description.open { max-height: 800px; padding: 15px 20px; border-top: 1px solid #eee; }
-        /* ستايل التعليقات */
-        .comment-box { border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; }
-        .comment-input { width: 80%; padding: 8px; border-radius: 10px; border: 1px solid #ddd; outline: none; }
-        .comment-btn { padding: 8px 15px; background: var(--secondary); color: white; border: none; border-radius: 10px; cursor: pointer; }
-        .comments-list { text-align: right; font-size: 12px; margin-top: 10px; max-height: 150px; overflow-y: auto; }
-        .comment-item { background: #f9f9f9; padding: 5px 10px; border-radius: 8px; margin-bottom: 5px; }
+        .card img.main-icon { width: 90px; height: 90px; border-radius: 22px; object-fit: cover; background: #eee; }
+        .install-btn { display: inline-flex; align-items: center; justify-content: center; width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border-radius: 50%; text-decoration: none; font-size: 20px; margin: 10px 0; }
+        .description { max-height: 0; overflow: hidden; transition: 0.4s; background: #fff; text-align: right; }
+        .description.open { max-height: 1000px; padding: 15px 20px; border-top: 1px solid #eee; }
+        .details-toggle { display: block; padding: 15px; color: #3a7bd5; cursor: pointer; background: #fafafa; border-top: 1px solid #f0f0f0; }
+        .comment-item { background: #f9f9f9; padding: 8px; border-radius: 8px; margin-bottom: 5px; font-size: 12px; text-align: right; }
     </style>
 </head>
 <body>
 
-<h2>⚡ متجر البرق الاحترافي</h2>
+<nav>
+    <a href="index.html"><i class="fas fa-home"></i> الرئيسية</a>
+    <a href="blog.html"><i class="fas fa-blog"></i> المدونة</a>
+</nav>
+
+<h2>⚡ متجر التطبيقات</h2>
 <div class="grid" id="appsContainer">جاري التحميل...</div>
 
 <script type="module">
@@ -47,12 +50,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    function getCleanUrl(url) {
-        if (!url) return 'https://via.placeholder.com/90?text=No+Image';
-        if (url.includes('ibb.co') && !url.includes('i.ibb.co')) return url.replace('ibb.co', 'i.ibb.co') + '.png';
-        return url;
-    }
-
     async function loadApps() {
         const container = document.getElementById('appsContainer');
         const q = query(collection(db, "apps"), orderBy("date", "desc"));
@@ -62,66 +59,42 @@
         snap.forEach(appDoc => {
             const d = appDoc.data();
             const appId = appDoc.id;
-            const screenList = d.screens ? d.screens.split(',') : [];
-            let screensHtml = '<div class="screenshot-container">';
-            screenList.forEach(url => screensHtml += `<img src="${getCleanUrl(url.trim())}" onerror="this.style.display='none'">`);
-            screensHtml += '</div>';
-
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
                 <div class="card-content">
-                    <img src="${getCleanUrl(d.icon)}" class="main-icon" onerror="this.src='https://via.placeholder.com/90'">
+                    <img src="${d.icon}" class="main-icon" onerror="this.src='https://via.placeholder.com/90'">
                     <h3>${d.name}</h3>
                     <a href="${d.url}" class="install-btn"><i class="fas fa-download"></i></a>
                 </div>
                 <div class="description">
-                    <p style="white-space: pre-wrap;">${d.desc}</p>
-                    <h4 style="margin:10px 0">لقطات الشاشة:</h4>
-                    ${screensHtml}
-                    <div class="comment-box">
-                        <input type="text" id="in-${appId}" class="comment-input" placeholder="اكتب رأيك هنا...">
-                        <button class="comment-btn" onclick="sendComment('${appId}')">إرسال</button>
-                        <div id="list-${appId}" class="comments-list">جاري تحميل التعليقات...</div>
-                    </div>
+                    <p>${d.desc}</p>
+                    <div id="list-${appId}"></div>
+                    <input type="text" id="in-${appId}" placeholder="أضف تعليق..." style="width:70%; padding:5px;">
+                    <button onclick="sendComment('${appId}')" style="padding:5px;">إرسال</button>
                 </div>
-                <span class="details-toggle" onclick="toggleDesc(this)">التفاصيل والتعليقات <i class="fas fa-chevron-down"></i></span>
+                <span class="details-toggle" onclick="this.previousElementSibling.classList.toggle('open')">التفاصيل والتعليقات</span>
             `;
             container.appendChild(card);
             listenComments(appId);
         });
     }
 
-    // وظيفة إرسال التعليق
     window.sendComment = async (appId) => {
         const input = document.getElementById(`in-${appId}`);
         if(!input.value.trim()) return;
-        await addDoc(collection(db, "apps", appId, "comments"), {
-            text: input.value,
-            date: new Date()
-        });
+        await addDoc(collection(db, "apps", appId, "comments"), { text: input.value, date: new Date() });
         input.value = "";
     };
 
-    // مراقبة التعليقات الجديدة فوراً
     function listenComments(appId) {
         const q = query(collection(db, "apps", appId, "comments"), orderBy("date", "desc"));
         onSnapshot(q, (snap) => {
             const list = document.getElementById(`list-${appId}`);
             list.innerHTML = "";
-            snap.forEach(doc => {
-                list.innerHTML += `<div class="comment-item">💬 ${doc.data().text}</div>`;
-            });
-            if(snap.empty) list.innerHTML = "لا توجد تعليقات بعد. كن أول من يعلق!";
+            snap.forEach(doc => { list.innerHTML += `<div class="comment-item">💬 ${doc.data().text}</div>`; });
         });
     }
-
-    window.toggleDesc = (btn) => {
-        const desc = btn.previousElementSibling;
-        desc.classList.toggle('open');
-        btn.innerHTML = desc.classList.contains('open') ? 'إخفاء <i class="fas fa-chevron-up"></i>' : 'التفاصيل والتعليقات <i class="fas fa-chevron-down"></i>';
-    };
-
     loadApps();
 </script>
 </body>
