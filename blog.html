@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أخبار البرق التقنية ⚡</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding-top: 70px; }
+        nav { background: #0f172a; padding: 15px; position: fixed; top: 0; width: 100%; z-index: 1000; display: flex; justify-content: center; gap: 20px; }
+        nav a { color: white; text-decoration: none; font-weight: bold; }
+        header { background: #0f172a; color: white; padding: 30px; text-align: center; margin-bottom: 20px; }
+        .container { max-width: 800px; margin: auto; padding: 0 15px; }
+        .post { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .post-img { width: 100%; max-height: 350px; object-fit: cover; display: none; background: #eee; }
+        .post-body { padding: 20px; }
+        .post h2 { color: #3a7bd5; margin: 0 0 10px 0; }
+        .post-meta { font-size: 0.8rem; color: #888; margin-bottom: 15px; }
+        .post-content { line-height: 1.7; white-space: pre-wrap; color: #444; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html"><i class="fas fa-home"></i> الرئيسية</a>
+        <a href="a.html"><i class="fas fa-store"></i> المتجر</a>
+    </nav>
+
+    <header><h1>مدونة البرق ⚡</h1></header>
+
+    <div class="container" id="blogContainer">جاري تحميل الأخبار...</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCv_xGLXXuDGq7cK9b2XzvH8p_e1c7SQro",
+            authDomain: "mystore2025-ab473.firebaseapp.com",
+            projectId: "mystore2025-ab473",
+            storageBucket: "mystore2025-ab473.firebasestorage.app",
+            messagingSenderId: "405578034380",
+            appId: "1:405578034380:web:7b494d1b2b6a09b7b5a669"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const q = query(collection(db, "news"), orderBy("date", "desc"));
+        onSnapshot(q, (snap) => {
+            const container = document.getElementById('blogContainer');
+            container.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const date = d.date?.toDate().toLocaleDateString('ar-EG') || "";
+                const hasImg = d.image ? `style="display:block" src="${d.image}"` : "";
+                
+                container.innerHTML += `
+                    <div class="post">
+                        <img class="post-img" ${hasImg}>
+                        <div class="post-body">
+                            <h2>${d.title}</h2>
+                            <div class="post-meta"><i class="fas fa-calendar"></i> ${date}</div>
+                            <div class="post-content">${d.content}</div>
+                        </div>
+                    </div>`;
+            });
+        });
+    </script>
+</body>
+</html>
