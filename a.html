@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر البرق برو 🚀</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #00d2ff; --secondary: #3a7bd5; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: auto; }
+        .card { background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
+        .card-content { padding: 20px; }
+        /* تحسين شكل الأيقونة */
+        .card img.main-icon { width: 90px; height: 90px; border-radius: 22px; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.1); background: #eee; }
+        .install-btn { display: inline-flex; align-items: center; justify-content: center; width: 55px; height: 55px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border-radius: 50%; text-decoration: none; font-size: 22px; margin: 10px 0; transition: 0.3s; }
+        
+        .screenshot-container { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 10px; scrollbar-width: thin; }
+        .screenshot-container img { height: 180px; border-radius: 10px; border: 1px solid #ddd; }
+
+        .details-toggle { display: block; padding: 15px; color: #3a7bd5; font-weight: bold; cursor: pointer; border-top: 1px solid #f0f0f0; background: #fafafa; }
+        .description { max-height: 0; overflow-y: auto; transition: max-height 0.4s ease-out; background: #fff; font-size: 14px; color: #555; line-height: 1.6; text-align: right; }
+        .description.open { max-height: 500px; padding: 15px 20px; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<h2>⚡ متجر التطبيقات الاحترافي</h2>
+<div class="grid" id="appsContainer">جاري التحميل...</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCv_xGLXXuDGq7cK9b2XzvH8p_e1c7SQro",
+        authDomain: "mystore2025-ab473.firebaseapp.com",
+        projectId: "mystore2025-ab473",
+        storageBucket: "mystore2025-ab473.firebasestorage.app",
+        messagingSenderId: "405578034380",
+        appId: "1:405578034380:web:7b494d1b2b6a09b7b5a669"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // دالة ذكية لإصلاح الروابط قبل العرض
+    function getCleanUrl(url) {
+        if (!url) return 'https://via.placeholder.com/90?text=No+Image';
+        if (url.includes('ibb.co') && !url.includes('i.ibb.co')) {
+            // محاولة تحويل رابط الصفحة إلى رابط مباشر إذا نسيت حرف i
+            return url.replace('ibb.co', 'i.ibb.co') + '.png';
+        }
+        return url;
+    }
+
+    async function loadApps() {
+        const container = document.getElementById('appsContainer');
+        const q = query(collection(db, "apps"), orderBy("date", "desc"));
+        const snap = await getDocs(q);
+        container.innerHTML = "";
+        
+        snap.forEach(doc => {
+            const d = doc.data();
+            const screenList = d.screens ? d.screens.split(',') : [];
+            let screensHtml = '<div class="screenshot-container">';
+            screenList.forEach(url => {
+                screensHtml += `<img src="${getCleanUrl(url.trim())}" onerror="this.style.display='none'">`;
+            });
+            screensHtml += '</div>';
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-content">
+                    <img src="${getCleanUrl(d.icon)}" class="main-icon" onerror="this.src='https://via.placeholder.com/90?text=Error'">
+                    <h3>${d.name}</h3>
+                    <a href="${d.url}" class="install-btn"><i class="fas fa-download"></i></a>
+                </div>
+                <div class="description">
+                    <p style="white-space: pre-wrap;">${d.desc}</p>
+                    <h4 style="margin:10px 0">لقطات الشاشة:</h4>
+                    ${screensHtml}
+                </div>
+                <span class="details-toggle" onclick="toggleDesc(this)">عرض التفاصيل والصور <i class="fas fa-chevron-down"></i></span>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    window.toggleDesc = (btn) => {
+        const desc = btn.previousElementSibling;
+        desc.classList.toggle('open');
+        btn.innerHTML = desc.classList.contains('open') ? 'إخفاء <i class="fas fa-chevron-up"></i>' : 'عرض التفاصيل والصور <i class="fas fa-chevron-down"></i>';
+    };
+
+    loadApps();
+</script>
+</body>
+</html>
