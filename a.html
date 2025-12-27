@@ -11,26 +11,29 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: auto; }
         .card { background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
         .card-content { padding: 20px; }
-        /* تحسين شكل الأيقونة */
         .card img.main-icon { width: 90px; height: 90px; border-radius: 22px; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.1); background: #eee; }
         .install-btn { display: inline-flex; align-items: center; justify-content: center; width: 55px; height: 55px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border-radius: 50%; text-decoration: none; font-size: 22px; margin: 10px 0; transition: 0.3s; }
-        
         .screenshot-container { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 10px; scrollbar-width: thin; }
         .screenshot-container img { height: 180px; border-radius: 10px; border: 1px solid #ddd; }
-
         .details-toggle { display: block; padding: 15px; color: #3a7bd5; font-weight: bold; cursor: pointer; border-top: 1px solid #f0f0f0; background: #fafafa; }
         .description { max-height: 0; overflow-y: auto; transition: max-height 0.4s ease-out; background: #fff; font-size: 14px; color: #555; line-height: 1.6; text-align: right; }
-        .description.open { max-height: 500px; padding: 15px 20px; border-top: 1px solid #eee; }
+        .description.open { max-height: 800px; padding: 15px 20px; border-top: 1px solid #eee; }
+        /* ستايل التعليقات */
+        .comment-box { border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; }
+        .comment-input { width: 80%; padding: 8px; border-radius: 10px; border: 1px solid #ddd; outline: none; }
+        .comment-btn { padding: 8px 15px; background: var(--secondary); color: white; border: none; border-radius: 10px; cursor: pointer; }
+        .comments-list { text-align: right; font-size: 12px; margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        .comment-item { background: #f9f9f9; padding: 5px 10px; border-radius: 8px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
-<h2>⚡ متجر التطبيقات الاحترافي</h2>
+<h2>⚡ متجر البرق الاحترافي</h2>
 <div class="grid" id="appsContainer">جاري التحميل...</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, orderBy, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCv_xGLXXuDGq7cK9b2XzvH8p_e1c7SQro",
@@ -44,13 +47,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // دالة ذكية لإصلاح الروابط قبل العرض
     function getCleanUrl(url) {
         if (!url) return 'https://via.placeholder.com/90?text=No+Image';
-        if (url.includes('ibb.co') && !url.includes('i.ibb.co')) {
-            // محاولة تحويل رابط الصفحة إلى رابط مباشر إذا نسيت حرف i
-            return url.replace('ibb.co', 'i.ibb.co') + '.png';
-        }
+        if (url.includes('ibb.co') && !url.includes('i.ibb.co')) return url.replace('ibb.co', 'i.ibb.co') + '.png';
         return url;
     }
 
@@ -60,20 +59,19 @@
         const snap = await getDocs(q);
         container.innerHTML = "";
         
-        snap.forEach(doc => {
-            const d = doc.data();
+        snap.forEach(appDoc => {
+            const d = appDoc.data();
+            const appId = appDoc.id;
             const screenList = d.screens ? d.screens.split(',') : [];
             let screensHtml = '<div class="screenshot-container">';
-            screenList.forEach(url => {
-                screensHtml += `<img src="${getCleanUrl(url.trim())}" onerror="this.style.display='none'">`;
-            });
+            screenList.forEach(url => screensHtml += `<img src="${getCleanUrl(url.trim())}" onerror="this.style.display='none'">`);
             screensHtml += '</div>';
 
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
                 <div class="card-content">
-                    <img src="${getCleanUrl(d.icon)}" class="main-icon" onerror="this.src='https://via.placeholder.com/90?text=Error'">
+                    <img src="${getCleanUrl(d.icon)}" class="main-icon" onerror="this.src='https://via.placeholder.com/90'">
                     <h3>${d.name}</h3>
                     <a href="${d.url}" class="install-btn"><i class="fas fa-download"></i></a>
                 </div>
@@ -81,17 +79,47 @@
                     <p style="white-space: pre-wrap;">${d.desc}</p>
                     <h4 style="margin:10px 0">لقطات الشاشة:</h4>
                     ${screensHtml}
+                    <div class="comment-box">
+                        <input type="text" id="in-${appId}" class="comment-input" placeholder="اكتب رأيك هنا...">
+                        <button class="comment-btn" onclick="sendComment('${appId}')">إرسال</button>
+                        <div id="list-${appId}" class="comments-list">جاري تحميل التعليقات...</div>
+                    </div>
                 </div>
-                <span class="details-toggle" onclick="toggleDesc(this)">عرض التفاصيل والصور <i class="fas fa-chevron-down"></i></span>
+                <span class="details-toggle" onclick="toggleDesc(this)">التفاصيل والتعليقات <i class="fas fa-chevron-down"></i></span>
             `;
             container.appendChild(card);
+            listenComments(appId);
+        });
+    }
+
+    // وظيفة إرسال التعليق
+    window.sendComment = async (appId) => {
+        const input = document.getElementById(`in-${appId}`);
+        if(!input.value.trim()) return;
+        await addDoc(collection(db, "apps", appId, "comments"), {
+            text: input.value,
+            date: new Date()
+        });
+        input.value = "";
+    };
+
+    // مراقبة التعليقات الجديدة فوراً
+    function listenComments(appId) {
+        const q = query(collection(db, "apps", appId, "comments"), orderBy("date", "desc"));
+        onSnapshot(q, (snap) => {
+            const list = document.getElementById(`list-${appId}`);
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                list.innerHTML += `<div class="comment-item">💬 ${doc.data().text}</div>`;
+            });
+            if(snap.empty) list.innerHTML = "لا توجد تعليقات بعد. كن أول من يعلق!";
         });
     }
 
     window.toggleDesc = (btn) => {
         const desc = btn.previousElementSibling;
         desc.classList.toggle('open');
-        btn.innerHTML = desc.classList.contains('open') ? 'إخفاء <i class="fas fa-chevron-up"></i>' : 'عرض التفاصيل والصور <i class="fas fa-chevron-down"></i>';
+        btn.innerHTML = desc.classList.contains('open') ? 'إخفاء <i class="fas fa-chevron-up"></i>' : 'التفاصيل والتعليقات <i class="fas fa-chevron-down"></i>';
     };
 
     loadApps();
