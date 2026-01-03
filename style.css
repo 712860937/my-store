@@ -1,0 +1,42 @@
+  :root { --gold: #d4af37; --dark: #121212; --green: #27ae60; --red: #e74c3c; }  
+        body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 75px 10px 20px 10px; direction: rtl; transition: 0.3s; }  
+        .navbar { background: var(--dark); border-bottom: 2px solid var(--gold); position: fixed; top: 0; left: 0; width: 100%; height: 55px; z-index: 2000; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-sizing: border-box; }  
+        .dropdown { position: relative; display: inline-block; }  
+        .dropbtn { background: var(--dark); color: var(--gold); padding: 5px 12px; font-weight: bold; border: 1px solid var(--gold); border-radius: 8px; cursor: pointer; font-size: 0.8rem; }  
+        .dropdown-content { display: none; position: absolute; background-color: var(--dark); min-width: 160px; box-shadow: 0px 8px 16px rgba(0,0,0,0.5); border: 1px solid var(--gold); z-index: 1; border-radius: 8px; margin-top: 8px; right: 0; }  
+        .dropdown-content a { color: var(--gold); padding: 10px 15px; text-decoration: none; display: block; font-size: 0.8rem; border-bottom: 1px solid #222; }  
+        .show { display: block; animation: fadeIn 0.3s; }  
+        .dashboard { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center; }  
+        .stat-card { background: var(--dark); color: var(--gold); padding: 15px 5px; border-radius: 12px; text-align: center; border-bottom: 3px solid var(--gold); flex: 1; min-width: 100px; }  
+        .stat-card span { display: block; font-size: 1.1rem; font-weight: bold; color: white; margin-top: 5px; }  
+        .admin-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 800px; margin: auto; position: relative; }  
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }  
+        input { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 0.9rem; }  
+        .main-btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; background: var(--dark); color: var(--gold); font-size: 1.1rem; margin-top: 15px; }  
+        .float-mic { position: fixed; bottom: 25px; left: 25px; width: 45px; height: 45px; background: #121212; border: 2px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 9999; }  
+        .pulse-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--gold); display: none; animation: pulse 1.5s infinite; }  
+        @keyframes pulse { 0% {transform: scale(1); opacity: 1;} 100% {transform: scale(1.8); opacity: 0;} }  
+        .mic-active { background: var(--red) !important; border-color: white !important; }  
+        .mic-active .pulse-ring { display: block; }  
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }  
+
+        .modal { display: none; position: fixed; top: 60px; left: 15px; width: 280px; max-height: 60vh; background: white; z-index: 3000; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid var(--gold); flex-direction: column; overflow: hidden; }
+        .modal-header { background: var(--dark); color: var(--gold); padding: 10px; text-align: center; font-size: 0.9rem; font-weight: bold; border-bottom: 1px solid var(--gold); }
+        .modal-content { padding: 10px; overflow-y: auto; flex: 1; font-size: 0.85rem; }
+        .badge { background: var(--red); color: white; padding: 2px 7px; border-radius: 50%; font-size: 0.7rem; position: absolute; top: -5px; right: -10px; border: 1px solid white; }
+        
+        /* أزرار الطلبات الجديدة */
+        .order-btn-group { display: flex; gap: 5px; margin-top: 8px; }
+        .btn-confirm { background: var(--green); color: white; border: none; padding: 6px; border-radius: 5px; flex: 1; cursor: pointer; font-weight: bold; }
+        .btn-reject { background: var(--red); color: white; border: none; padding: 6px; border-radius: 5px; flex: 1; cursor: pointer; font-weight: bold; }
+    /* نافذة التأكيد الفخمة */
+.confirm-box {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center;
+}
+.confirm-content {
+    background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px;
+    border: 3px solid var(--gold); text-align: center; color: var(--dark);
+}
+.confirm-btns { display: flex; gap: 10px; margin-top: 20px; }
+.confirm-btns button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
