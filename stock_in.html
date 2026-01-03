@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>توريد بضاعة | السياري</title>
+    <style>
+        :root { --gold: #d4af37; --dark: #121212; }
+        body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 70px 15px; direction: rtl; }
+        .header { background: var(--dark); color: var(--gold); padding: 15px; position: fixed; top: 0; left: 0; width: 100%; text-align: center; font-weight: bold; z-index: 100; border-bottom: 2px solid var(--gold); }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-save { width: 100%; padding: 15px; background: var(--dark); color: var(--gold); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+    
+</head>
+<body>
+<header>  
+    <h2 style="margin:0; font-size: 1.2rem; text-align: center; width: 100%;">💎 إمبراطورية السياري</h2>
+    <a href="admin.html" class="back-btn">خروج ←</a>  
+  
+</header>  
+<div class="header">🚚 توريد بضاعة جديدة للمخزن</div>
+
+<div class="card">
+    <label>اختر الصنف من المخزن:</label>
+    <select id="productSelect"><option value="">جاري تحميل الأصناف...</option></select>
+    
+    <input type="number" id="buyQty" placeholder="الكمية المشتراة">
+    <input type="number" id="buyCost" placeholder="سعر التكلفة الجديد (اختياري)">
+    <input type="text" id="supplier" placeholder="اسم المورد أو التاجر">
+    
+    <button class="btn-save" id="btnUpdateStock">تحديث المخزن وتسجيل الشروة</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, updateDoc, doc, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {  
+        apiKey: "AIzaSyAD5GAic-ioZhetXQQ4u8shXScxTZO2DoI",  
+        authDomain: "elite-store-8f693.firebaseapp.com",  
+        projectId: "elite-store-8f693",  
+        storageBucket: "elite-store-8f693.firebasestorage.app",  
+        messagingSenderId: "227353365436",  
+        appId: "1:227353365436:web:e662600dac0e83fe6739b9",  
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const pSelect = document.getElementById('productSelect');
+
+    // تحميل المنتجات في القائمة
+    onSnapshot(collection(db, "products"), (snap) => {
+        pSelect.innerHTML = '<option value="">-- اختر صنفاً --</option>';
+        snap.forEach(d => {
+            const p = d.data();
+            pSelect.innerHTML += `<option value="${d.id}" data-stock="${p.stock}" data-name="${p.name}">${p.name} (الحالي: ${p.stock})</option>`;
+        });
+    });
+
+    document.getElementById('btnUpdateStock').onclick = async () => {
+        const pId = pSelect.value;
+        const qty = parseInt(document.getElementById('buyQty').value);
+        const cost = document.getElementById('buyCost').value;
+        const supplier = document.getElementById('supplier').value || "تاجر مجهول";
+
+        if(!pId || isNaN(qty)) return alert("عبّ البيانات يا زعيم!");
+
+        const selectedOpt = pSelect.options[pSelect.selectedIndex];
+        const oldStock = parseInt(selectedOpt.getAttribute('data-stock'));
+        const pName = selectedOpt.getAttribute('data-name');
+
+        // 1. تحديث المخزن
+        const pRef = doc(db, "products", pId);
+        let updateData = { stock: oldStock + qty };
+        if(cost) updateData.cost = parseFloat(cost);
+        
+        await updateDoc(pRef, updateData);
+
+        // 2. تسجيل العملية في سجل المشتريات (Inbound)
+        await addDoc(collection(db, "stock_logs"), {
+            productName: pName,
+            quantity: qty,
+            supplier: supplier,
+            date: new Date(),
+            type: "شراء/توريد"
+        });
+
+        alert(`تم! المخزن الحين فيه ${oldStock + qty} من ${pName}`);
+        document.getElementById('buyQty').value = "";
+    };
+</script>
+</body>
+</html>

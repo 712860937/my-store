@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر النخبة | محمد السياري</title>
+    <style>
+        :root { --gold: #d4af37; --dark: #121212; --green: #2ecc71; --red: #e74c3c; }
+        * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #f0f0f0; margin: 0; padding-bottom: 80px; }
+        header { background: var(--dark); color: var(--gold); padding: 8px; text-align: center; position: sticky; top: 0; z-index: 100; border-bottom: 2px solid var(--gold); }
+        header h1 { margin: 0; font-size: 1.1rem; letter-spacing: 1px; }
+        .search-box { padding: 8px; background: #1e1e1e; display: flex; justify-content: center; }
+        #searchInput { width: 90%; padding: 8px 15px; border-radius: 20px; border: none; text-align: center; font-size: 0.9rem; }
+        .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 12px; }
+        .product-card { background: white; border-radius: 12px; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; transition: transform 0.2s; position: relative; }
+        .product-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; }
+        .product-card h3 { font-size: 0.95rem; margin: 8px 0; color: #333; }
+        .price { color: var(--green); font-weight: bold; margin-bottom: 2px; font-size: 1rem; }
+        .stock-label { font-size: 0.75rem; color: #777; margin-bottom: 8px; display: block; }
+        .out-of-stock { color: var(--red); font-weight: bold; }
+        .qty-ctrl { display: flex; justify-content: center; align-items: center; gap: 5px; margin-bottom: 10px; }
+        .qty-btn { background: #f8f8f8; border: 1px solid #eee; width: 30px; height: 30px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .qty-screen { width: 45px; text-align: center; border: 1px solid #ddd; border-radius: 5px; font-weight: bold; padding: 3px; background: white; }
+        .add-btn { background: var(--dark); color: var(--gold); border: 1px solid var(--gold); padding: 8px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        .add-btn:disabled { background: #ccc; border-color: #ccc; color: white; cursor: not-allowed; }
+        
+        /* تذييل السلة المطور */
+        .footer-cart { position: fixed; bottom: 0; width: 100%; background: var(--dark); color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 200; border-top: 2px solid var(--gold); gap: 5px; }
+        .footer-btns { display: flex; gap: 8px; }
+        .view-cart-btn { background: #444; color: var(--gold); border: 1px solid var(--gold); padding: 8px 12px; border-radius: 50px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+        .pay-btn { background: var(--green); color: white; border: none; padding: 10px 18px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        
+        /* النوافذ المنبثقة */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; color: black; max-height: 90vh; overflow-y: auto; position: relative; }
+        .close-btn { position: absolute; top: 10px; left: 10px; font-size: 1.5rem; cursor: pointer; color: #777; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<header><h1>⚜️ إمبراطورية السياري ⚜️</h1></header>
+<div class="search-box"><input type="text" id="searchInput" placeholder="🔍 ابحث عن منتجك..."></div>
+<div class="container" id="productGrid"></div>
+
+<div class="footer-cart">
+    <div><small>الإجمالي:</small> <span id="totalCost" style="color:var(--gold); font-weight:bold;">0</span>$</div>
+    <div class="footer-btns">
+        <button class="view-cart-btn" onclick="window.showCartModal()">السلة 🛒</button>
+        <button class="pay-btn" id="btnShowCheckout">تأكيد 💳</button>
+    </div>
+</div>
+
+<div id="cartModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="window.closeModal('cartModal')">×</span>
+        <h3 style="text-align:center;">🛒 سلة التسوق</h3>
+        <div id="cartItemsList" style="margin-top:15px;"></div>
+        <div style="text-align:center; margin-top:15px; border-top:2px solid #eee; padding-top:10px;">
+            <b>إجمالي الطلب: <span id="cartTotalDisplay">0</span>$</b>
+        </div>
+        <button class="pay-btn" style="width:100%; margin-top:15px;" onclick="window.goToCheckout()">متابعة الدفع ←</button>
+    </div>
+</div>
+
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="window.closeModal('paymentModal')">×</span>
+        <h3 style="text-align:center;">تفاصيل الطلب</h3>
+        <div id="finalOrderList" style="font-size:0.8rem; background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px; max-height: 120px; overflow-y: auto;"></div>
+        
+        <input type="text" id="userName" placeholder="الاسم الكامل">
+        <input type="text" id="userPhone" placeholder="رقم الهاتف">
+        
+        <select id="payMethod" onchange="window.showPayDetails()">
+            <option value="">-- وسيلة الدفع --</option>
+            <option value="cash">💵 نقد / آجل</option>
+            <option value="kuraimi">🏦 بنك الكريمي</option>
+        </select>
+        
+        <input type="number" id="paidAmount" placeholder="المبلغ الذي ستدفعه الآن" oninput="window.calcRemaining()">
+        <div id="debtNotice" style="font-size: 0.8rem; margin: 5px 0; font-weight: bold; text-align: center;"></div>
+        <div id="accountDetails" style="display:none; background:#fff9e6; padding:10px; border:1px dashed var(--gold); border-radius:8px;"><p id="accountInfo" style="margin:0; font-size:0.8rem;"></p></div>
+        
+        <button class="pay-btn" style="width:100%; margin-top:10px;" id="btnConfirmPayment">إرسال الطلب النهائي ✅</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {  
+        apiKey: "AIzaSyAD5GAic-ioZhetXQQ4u8shXScxTZO2DoI",
+        authDomain: "elite-store-8f693.firebaseapp.com",
+        projectId: "elite-store-8f693",
+        storageBucket: "elite-store-8f693.firebasestorage.app",
+        messagingSenderId: "227353365436",
+        appId: "1:227353365436:web:e662600dac0e83fe6739b9",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let products = [], cart = {};
+
+    onSnapshot(collection(db, "products"), (snapshot) => {
+        products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        render(products);
+    });
+
+    function render(data) {
+        document.getElementById('productGrid').innerHTML = data.map(p => {
+            const stock = Number(p.stock) || 0;
+            const isAvailable = stock > 0;
+            return `
+            <div class="product-card">
+                <img src="${p.image || 'https://via.placeholder.com/150'}">
+                <h3>${p.name}</h3>
+                <p class="price">${p.price}$</p>
+                <span class="stock-label ${!isAvailable ? 'out-of-stock' : ''}">${isAvailable ? `متبقي: ${stock}` : '❌ نفذت'}</span>
+                <div class="qty-ctrl">
+                    <button class="qty-btn" onclick="window.changeQty('${p.id}', -1)" ${!isAvailable ? 'disabled' : ''}>-</button>
+                    <input type="number" class="qty-screen" id="qty-val-${p.id}" value="${isAvailable ? 1 : 0}" 
+                           oninput="window.validateQty('${p.id}', ${stock})" ${!isAvailable ? 'disabled' : ''}>
+                    <button class="qty-btn" onclick="window.changeQty('${p.id}', 1)" ${!isAvailable ? 'disabled' : ''}>+</button>
+                </div>
+                <button class="add-btn" onclick="window.addToCart('${p.id}')" ${!isAvailable ? 'disabled' : ''}>إضافة 🛒</button>
+            </div>
+        `}).join('');
+    }
+
+    window.validateQty = (id, max) => {
+        let el = document.getElementById(`qty-val-${id}`);
+        let val = parseInt(el.value);
+        if (isNaN(val) || val < 1) el.value = 1;
+        if (val > max) { alert(`المتوفر ${max} فقط!`); el.value = max; }
+    };
+
+    window.changeQty = (id, delta) => {
+        let el = document.getElementById(`qty-val-${id}`);
+        let current = parseInt(el.value) || 1;
+        const p = products.find(x => x.id === id);
+        let newVal = current + delta;
+        if(newVal >= 1 && newVal <= (p.stock || 0)) el.value = newVal;
+    };
+
+    window.addToCart = (id) => {
+        const product = products.find(p => p.id === id);
+        const qty = parseInt(document.getElementById(`qty-val-${id}`).value) || 0;
+        if (qty <= 0) return;
+        if (cart[id]) cart[id].qty += qty;
+        else cart[id] = { name: product.name, price: product.price, qty: qty };
+        updateTotal();
+        alert("تمت الإضافة للسلة ✅");
+    };
+
+    function updateTotal() {
+        let total = 0;
+        for(let id in cart) total += (cart[id].price * cart[id].qty);
+        document.getElementById('totalCost').innerText = total.toFixed(2);
+        document.getElementById('cartTotalDisplay').innerText = total.toFixed(2);
+    }
+
+    // --- وظائف السلة المطور ---
+    window.showCartModal = () => {
+        const list = document.getElementById('cartItemsList');
+        if(Object.keys(cart).length === 0) {
+            list.innerHTML = "<p style='text-align:center;'>السلة فارغة يا زعيم! 😅</p>";
+        } else {
+            list.innerHTML = Object.keys(cart).map(id => `
+                <div class="cart-item">
+                    <div><b>${cart[id].name}</b><br><small>${cart[id].qty} × ${cart[id].price}$</small></div>
+                    <button onclick="window.removeFromCart('${id}')" style="background:none; border:none; color:red; cursor:pointer;">🗑️</button>
+                </div>
+            `).join('');
+        }
+        document.getElementById('cartModal').style.display = 'flex';
+    };
+
+    window.removeFromCart = (id) => {
+        delete cart[id];
+        updateTotal();
+        window.showCartModal();
+    };
+
+    window.closeModal = (m) => document.getElementById(m).style.display = 'none';
+
+    window.goToCheckout = () => {
+        if(Object.keys(cart).length === 0) return alert("سلتك فارغة!");
+        window.closeModal('cartModal');
+        document.getElementById('btnShowCheckout').click();
+    };
+
+    // --- وظائف الدفع النهائي ---
+    window.calcRemaining = () => {
+        const total = parseFloat(document.getElementById('totalCost').innerText);
+        let paid = parseFloat(document.getElementById('paidAmount').value) || 0;
+        const notice = document.getElementById('debtNotice');
+        if (paid > total) { document.getElementById('paidAmount').value = total; paid = total; }
+        const rem = total - paid;
+        notice.style.color = rem > 0 ? "var(--red)" : "var(--green)";
+        notice.innerText = rem > 0 ? `⚠️ متبقي آجل: ${rem.toFixed(2)}$` : "✅ تم السداد بالكامل";
+    };
+
+    window.showPayDetails = () => {
+        const method = document.getElementById('payMethod').value;
+        const details = document.getElementById('accountDetails');
+        details.style.display = (method && method !== "cash") ? 'block' : 'none';
+        document.getElementById('accountInfo').innerText = method === "kuraimi" ? "بنك الكريمي: 1234567" : "تواصل معنا للسداد.";
+    };
+
+    document.getElementById('btnShowCheckout').onclick = () => {
+        if(Object.keys(cart).length === 0) return alert("سلتك فارغة!");
+        document.getElementById('paymentModal').style.display = 'flex';
+        let list = "";
+        for(let id in cart) list += `• ${cart[id].name} (الكمية: ${cart[id].qty})<br>`;
+        document.getElementById('finalOrderList').innerHTML = list;
+    };
+
+    document.getElementById('btnConfirmPayment').onclick = async () => {
+        const name = document.getElementById('userName').value;
+        const phone = document.getElementById('userPhone').value || "بدون رقم";
+        const method = document.getElementById('payMethod').value;
+        const total = parseFloat(document.getElementById('totalCost').innerText);
+        const paid = parseFloat(document.getElementById('paidAmount').value) || 0;
+
+        if(!name || !method) return alert("أكمل بياناتك يا بطل!");
+
+        const itemsArray = Object.keys(cart).map(id => ({
+            productId: id, name: cart[id].name, price: cart[id].price, quantity: cart[id].qty
+        }));
+
+        await addDoc(collection(db, "orders"), {
+            customer: name, phone: phone, method: method,
+            items: itemsArray, total: total, paid: paid, 
+            remaining: total - paid, date: new Date()
+        });
+
+        alert("تم إرسال طلبك بنجاح! ⚜️");
+        location.reload();
+    };
+
+    document.getElementById('searchInput').oninput = (e) => {
+        render(products.filter(p => p.name.toLowerCase().includes(e.target.value.toLowerCase())));
+    };
+</script>
+</body>
+</html>

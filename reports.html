@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تقارير الإمبراطورية | السياري</title>
+    <style>
+        :root { --gold: #d4af37; --dark: #121212; --green: #27ae60; --blue: #2980b9; }
+        body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 80px 15px; direction: rtl; }
+        .header { background: var(--dark); color: var(--gold); padding: 15px; position: fixed; top: 0; left: 0; width: 100%; text-align: center; font-weight: bold; z-index: 100; border-bottom: 2px solid var(--gold); }
+        .grid-reports { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-top: 4px solid var(--gold); }
+        .stat-card h4 { margin: 0; color: #888; font-size: 0.9rem; }
+        .stat-card div { font-size: 1.5rem; font-weight: bold; margin-top: 10px; }
+        .profit { color: var(--green); }
+        .sales { color: var(--blue); }
+        .costs { color: #e74c3c; }
+        table { width: 100%; background: white; border-radius: 15px; overflow: hidden; border-collapse: collapse; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
+        th { background: var(--dark); color: var(--gold); }
+    </style>
+</head>
+<body>
+
+<div class="header">📊 تقارير الأداء المالي</div>
+
+<div class="grid-reports">
+    <div class="stat-card">
+        <h4>إجمالي المبيعات</h4>
+        <div id="totalSales" class="sales">0$</div>
+    </div>
+    <div class="stat-card">
+        <h4>تكلفة البضاعة</h4>
+        <div id="totalCost" class="costs">0$</div>
+    </div>
+    <div class="stat-card" style="border-top-color: var(--green);">
+        <h4>صافي الربح</h4>
+        <div id="netProfit" class="profit">0$</div>
+    </div>
+</div>
+
+<h3>📦 حركة المبيعات التفصيلية</h3>
+<table id="reportsTable">
+    <thead>
+        <tr>
+            <th>التاريخ</th>
+            <th>العميل</th>
+            <th>المبلغ</th>
+            <th>الربح</th>
+        </tr>
+    </thead>
+    <tbody>
+        </tbody>
+</table>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {  
+        apiKey: "AIzaSyAD5GAic-ioZhetXQQ4u8shXScxTZO2DoI",  
+        authDomain: "elite-store-8f693.firebaseapp.com",  
+        projectId: "elite-store-8f693",  
+        storageBucket: "elite-store-8f693.firebasestorage.app",  
+        messagingSenderId: "227353365436",  
+        appId: "1:227353365436:web:e662600dac0e83fe6739b9",  
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // مراقبة الفواتير لحساب الأرباح
+    onSnapshot(query(collection(db, "invoices"), orderBy("createdAt", "desc")), async (snap) => {
+        let tSales = 0;
+        let tCosts = 0;
+        const tableBody = document.querySelector('#reportsTable tbody');
+        tableBody.innerHTML = "";
+
+        // ملاحظة: عشان نحسب الربح بدقة، بنعتمد على بيانات الأصناف وقت البيع
+        for (const docBox of snap.docs) {
+            const data = docBox.data();
+            let invoiceProfit = 0;
+            let invoiceCost = 0;
+
+            // حساب تكلفة وربح كل صنف في الفاتورة
+            data.items.forEach(item => {
+                // الربح = (سعر البيع - سعر التكلفة) * الكمية
+                // ملاحظة: بنفترض إنك مخزن سعر التكلفة في الفاتورة أو بنسحبه من المنتج
+                const costPrice = item.cost || 0; 
+                invoiceCost += (costPrice * item.quantity);
+                invoiceProfit += ((item.price - costPrice) * item.quantity);
+            });
+
+            tSales += data.total;
+            tCosts += invoiceCost;
+
+            const date = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString('ar-SA') : "---";
+            
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${date}</td>
+                    <td>${data.customer}</td>
+                    <td>${data.total}$</td>
+                    <td class="profit">${invoiceProfit.toFixed(2)}$</td>
+                </tr>
+            `;
+        }
+
+        document.getElementById('totalSales').innerText = tSales.toFixed(2) + "$";
+        document.getElementById('totalCost').innerText = tCosts.toFixed(2) + "$";
+        document.getElementById('netProfit').innerText = (tSales - tCosts).toFixed(2) + "$";
+    });
+</script>
+</body>
+</html>

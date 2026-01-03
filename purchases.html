@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>سجل الفواتير | السياري</title>
+    <style>
+        :root { --gold: #d4af37; --dark: #121212; --green: #27ae60; }
+        body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 70px 15px 20px; direction: rtl; }
+        .header { background: var(--dark); color: var(--gold); padding: 15px; position: fixed; top: 0; left: 0; width: 100%; text-align: center; font-weight: bold; z-index: 100; border-bottom: 2px solid var(--gold); }
+        .invoice-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 12px; border-right: 6px solid var(--gold); cursor: pointer; transition: 0.2s; }
+        .invoice-card:hover { transform: scale(1.02); }
+        .invoice-card b { color: var(--dark); font-size: 1.1rem; }
+        .total-badge { background: var(--gold); color: white; padding: 4px 10px; border-radius: 20px; float: left; font-weight: bold; }
+        
+        /* Modal التفاصيل */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; position: relative; animation: slideUp 0.3s; }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { background: var(--dark); color: var(--gold); padding: 15px; text-align: center; font-size: 1.2rem; }
+        .modal-body { padding: 20px; }
+        .modal-footer { display: flex; gap: 10px; padding: 15px; background: #f9f9f9; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
+        .btn-print { background: var(--dark); border: 1px solid var(--gold); color: var(--gold); }
+        .btn-share { background: #25D366; }
+        .btn-close { background: #888; margin-top: 10px; width: 100%; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: right; }
+        th { color: #888; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="header">📜 أرشيف فواتير الإمبراطورية</div>
+
+<div id="purchasesList">جاري جلب الفواتير...</div>
+
+<div id="invoiceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">تفاصيل الفاتورة ⚜️</div>
+        <div id="modalBody" class="modal-body"></div>
+        <div class="modal-footer">
+            <button class="btn btn-print" onclick="window.print()">🖨️ طباعة</button>
+            <button id="shareBtn" class="btn btn-share">📱 واتساب</button>
+        </div>
+        <div style="padding: 0 15px 15px;">
+            <button class="btn btn-close" onclick="closeModal()">إغلاق</button>
+        </div>
+    </div>
+</div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {  
+        apiKey: "AIzaSyAD5GAic-ioZhetXQQ4u8shXScxTZO2DoI",  
+        authDomain: "elite-store-8f693.firebaseapp.com",  
+        projectId: "elite-store-8f693",  
+        storageBucket: "elite-store-8f693.firebasestorage.app",  
+        messagingSenderId: "227353365436",  
+        appId: "1:227353365436:web:e662600dac0e83fe6739b9",  
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const q = query(collection(db, "invoices"), orderBy("createdAt", "desc"));
+
+    onSnapshot(q, (snap) => {
+        const list = document.getElementById('purchasesList');
+        list.innerHTML = snap.empty ? "<p style='text-align:center;'>لا توجد فواتير حالياً</p>" : "";
+        
+        snap.forEach(docBox => {
+            const d = docBox.data();
+            const id = docBox.id; 
+            const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('ar-SA') : "---";
+            
+            list.innerHTML += `
+                <div class="invoice-card" style="position: relative;" onclick='showInvoice(${JSON.stringify(d)})'>
+                    <span class="total-badge">${d.total}$</span>
+                    <b>👤 ${d.customer}</b><br>
+                    <small>📅 ${date}</small>
+                    <div onclick="event.stopPropagation(); deleteInvoice('${id}')" 
+                         style="position: absolute; left: 15px; bottom: 15px; color: #e74c3c; font-size: 1.2rem; cursor: pointer;">
+                         حذف
+                    </div>
+                </div>`;
+        });
+    });
+
+    // دالة الحذف الرسمية
+    window.deleteInvoice = async (id) => {
+        if (confirm("يا إمبراطور، هل تود إعدام هذه الفاتورة نهائياً؟ 🗑️")) {
+            try {
+                await deleteDoc(doc(db, "invoices", id));
+                // الإشعار الحين بيطلع أوتوماتيك بسبب الـ onSnapshot
+            } catch (error) {
+                alert("تعذر الحذف.. السيستم يرفض الأوامر!");
+            }
+        }
+    };
+
+    window.showInvoice = (inv) => {
+        const modal = document.getElementById('invoiceModal');
+        const body = document.getElementById('modalBody');
+        const date = inv.createdAt?.toDate ? inv.createdAt.toDate().toLocaleString('ar-SA') : "---";
+
+        let itemsRows = inv.items.map(i => `
+            <tr>
+                <td>${i.name}</td>
+                <td>${i.quantity}</td>
+                <td>${(i.price * i.quantity).toFixed(2)}$</td>
+            </tr>`).join('');
+
+        body.innerHTML = `
+            <p><b>العميل:</b> ${inv.customer}</p>
+            <p><b>التاريخ:</b> ${date}</p>
+            <table>
+                <thead><tr><th>الصنف</th><th>الكمية</th><th>المجموع</th></tr></thead>
+                <tbody>${itemsRows}</tbody>
+            </table>
+            <h3 style="text-align:left; color:var(--green);">الإجمالي: ${inv.total}$</h3>
+        `;
+
+        document.getElementById('shareBtn').onclick = () => {
+            const text = `فاتورة من إمبراطورية السياري ⚜️\nالعميل: ${inv.customer}\nالمجموع: ${inv.total}$`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        };
+        modal.style.display = "flex";
+    };
+
+    window.closeModal = () => document.getElementById('invoiceModal').style.display = "none";
+</script>
+
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>  
+<html lang="ar" dir="rtl">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>مستودع الإمبراطورية | مساعد ميسي</title>  
+   <style>
+:root {
+  --bg: #0f172a;
+  --card: #111827;
+  --line: #1f2933;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --green: #22c55e;
+  --red: #ef4444;
+  --blue: #3b82f6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: system-ui, sans-serif;
+  background: linear-gradient(135deg, #020617, #0f172a);
+  color: var(--text);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  padding: 14px 18px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+}
+
+.back-btn {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  background: var(--blue);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.7rem;
+  z-index: 999;
+}
+
+.search-bar {
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  background: var(--card);
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.search-bar::placeholder { color: var(--muted); }
+
+.item-row {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.item-header img {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.item-header h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 1rem;
+}
+
+.stock-badge {
+  background: #052e16;
+  color: var(--green);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.item-details {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+  gap: 10px;
+}
+
+.field label {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.field input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #020617;
+  color: var(--text);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn-update {
+  flex: 1;
+  background: var(--green);
+  color: #022c22;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.btn-delete {
+  background: var(--red);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+}
+        .item-details {
+  display: none;
+}
+
+.item-details.open {
+  display: grid;
+}
+</style>  
+        
+        
+</head>  
+<body>  
+
+<header>  
+    <h2 style="margin:0; font-size: 1.2rem; text-align: center; width: 100%;">💎 إمبراطورية السياري</h2>
+    <a href="admin.html" class="back-btn">خروج ←</a>  
+  
+</header>  
+
+<input type="text" id="filterInput" class="search-bar" placeholder="🔎 ابحث باسم المنتج...">  
+
+<div style="text-align: center;">
+
+<div id="itemsList"></div>  
+
+<script type="module">  
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";  
+    import { getFirestore, collection, onSnapshot, doc, deleteDoc, updateDoc, increment, getDocs } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";  
+
+    const firebaseConfig = {  
+      apiKey: "AIzaSyAD5GAic-ioZhetXQQ4u8shXScxTZO2DoI",  
+      authDomain: "elite-store-8f693.firebaseapp.com",  
+      projectId: "elite-store-8f693",  
+      storageBucket: "elite-store-8f693.firebasestorage.app",  
+      messagingSenderId: "227353365436",  
+      appId: "1:227353365436:web:e662600dac0e83fe6739b9"  
+    };  
+
+    const app = initializeApp(firebaseConfig);  
+    const db = getFirestore(app);  
+
+    // --- نظام البوت الذكي ---
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'ar-SA';
+
+    recognition.onresult = async (event) => {
+        let speech = event.results[0][0].transcript;
+        speech = speech.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+        
+        const amountMatch = speech.match(/\d+/);
+        const amount = amountMatch ? parseInt(amountMatch[0]) : 0;
+        
+        if (amount > 0) {
+            const querySnapshot = await getDocs(collection(db, "products"));
+            let found = false;
+            querySnapshot.forEach(async (docSnap) => {
+                const p = docSnap.data();
+                if (speech.includes(p.name)) {
+                    await updateDoc(doc(db, "products", docSnap.id), { stock: increment(amount) });
+                    speak(`تمت إضافة ${amount} إلى ${p.name} بنجاح يا ميسي`);
+                    found = true;
+                }
+            });
+            if (!found) speak("لم أعثر على هذا الصنف");
+        } else {
+            speak("لم أسمع الرقم بوضوح");
+        }
+    };
+
+    function speak(t) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(t)); }
+    window.startVoiceBot = () => { recognition.start(); speak("أسمعك.. ماذا تريد؟"); };
+
+    // --- عرض البيانات (محدث لإظهار الكمية والأرقام الإنجليزية) ---
+    onSnapshot(collection(db, "products"), (snapshot) => {  
+        const list = document.getElementById('itemsList');  
+        list.innerHTML = "";  
+        snapshot.forEach(d => {  
+            const p = d.data();  
+            const imgUrl = p.image || p.img || 'https://via.placeholder.com/60';  
+            list.innerHTML += `  
+                <div class="item-row">  
+                    <div class="item-header" onclick="window.toggleAccordion('${d.id}')">  
+                        <img src="${imgUrl}">  
+                        <h3>
+                            <span>${p.name}</span>
+                            <span class="stock-badge en-num">${p.stock} متبقي</span>
+                        </h3>  
+                          
+                    </div>  
+                    <div class="item-details" id="details-${d.id}">  
+                        <div class="field"><label>اسم الصنف</label><input type="text" id="name-${d.id}" value="${p.name}"></div>  
+                        <div class="field"><label>رابط الصورة</label><input type="text" id="img-${d.id}" value="${p.image || p.img || ''}"></div>  
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">  
+                            <div class="field"><label>السعر ($)</label><input type="number" class="en-num" id="price-${d.id}" value="${p.price}"></div>  
+                            <div class="field"><label>إضافة كمية (+)</label><div class="stock-control"><input type="number" class="en-num" id="add-stock-${d.id}" value="0"></div></div>  
+                        </div>  
+                        <div class="actions">  
+                            <button class="btn-update" onclick="window.updateItem('${d.id}')">تحديث ✅</button>  
+                            <button class="btn-delete" onclick="window.delItem('${d.id}')">حذف</button>  
+                        </div>  
+                    </div>  
+                </div>`;  
+        });  
+    });  
+
+    window.toggleAccordion = (id) => {
+    const details = document.getElementById(`details-${id}`);
+    details.classList.toggle('open');
+};
+
+    window.updateItem = async (id) => {  
+        const addStock = parseInt(document.getElementById(`add-stock-${id}`).value) || 0;  
+        await updateDoc(doc(db, "products", id), {   
+            name: document.getElementById(`name-${id}`).value,   
+            price: parseFloat(document.getElementById(`price-${id}`).value),   
+            stock: increment(addStock),  
+            image: document.getElementById(`img-${id}`).value   
+        });  
+        alert("تم التحديث بنجاح! 🏆");  
+    };  
+
+    window.delItem = async (id) => { if(confirm("حذف الصنف؟")) await deleteDoc(doc(db, "products", id)); };  
+
+    document.getElementById('filterInput').oninput = (e) => {  
+        const val = e.target.value.toLowerCase();  
+        document.querySelectorAll('.item-row').forEach(row => {  
+            row.style.display = row.querySelector('h3 span').innerText.toLowerCase().includes(val) ? 'block' : 'none';  
+        });  
+    };  
+</script>  
+</body>  
+</html>

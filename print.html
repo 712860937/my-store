@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>فاتورة المخزن الصغير | السياري</title>
+    <style>
+        /* إعدادات الورق الحراري */
+        @page { size: 80mm auto; margin: 0; }
+        
+        body { 
+            font-family: 'Arial', sans-serif; 
+            width: 72mm; /* عرض الطباعة الفعلي */
+            margin: auto; 
+            padding: 5px; 
+            background: #fff; 
+            font-size: 11px; /* خط أصغر ليناسب الورق */
+        }
+
+        .header { 
+            text-align: center; 
+            border-bottom: 1px dashed #000; 
+            padding-bottom: 5px; 
+            margin-bottom: 10px; 
+        }
+
+        .header h2 { margin: 5px 0; font-size: 16px; }
+
+        .info { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px; 
+            font-size: 10px; 
+            margin-bottom: 10px; 
+            border-bottom: 1px dashed #000;
+            padding-bottom: 5px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        
+        th { 
+            border-bottom: 1px solid #000; 
+            padding: 5px 2px; 
+            font-size: 10px; 
+            text-align: center;
+        }
+
+        td { 
+            padding: 5px 2px; 
+            text-align: center; 
+            border-bottom: 0.5px solid #eee;
+            word-break: break-word; 
+        }
+
+        /* تمييز اسم الصنف ليكون واضحاً */
+        .item-name { text-align: right; width: 40%; }
+
+        .total-section {
+            margin-top: 10px;
+            border-top: 1px double #000;
+            padding-top: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .footer { 
+            margin-top: 15px; 
+            text-align: center; 
+            font-size: 9px; 
+            font-style: italic; 
+        }
+        
+        .no-print { 
+            background: #d4af37; 
+            padding: 10px; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" onclick="window.print()">
+        🖨️ طباعة الفاتورة الحرارية
+    </div>
+
+    <div class="header">
+        <h2>⚜️ مخزن السياري ⚜️</h2>
+        <small>Elite Store - Inventory</small>
+    </div>
+
+    <div class="info">
+        <span>التاريخ: <b id="currentDate"></b></span>
+        <span>النوع: <b>تقرير جرد سريع</b></span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="item-name">الصنف</th>
+                <th>سعر</th>
+                <th>كمية</th>
+                <th>إجمالي</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+
+    <div id="summary" class="total-section"></div>
+
+    <div class="footer">
+        شكراً لاستخدامك نظام السياري الذكي 2026
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAD5GAic-ioZhetXQQ4u8shXScxTZO2DoI", 
+        authDomain: "elite-store-8f693.firebaseapp.com", 
+        projectId: "elite-store-8f693", 
+        storageBucket: "elite-store-8f693.firebasestorage.app", 
+        messagingSenderId: "227353365436", 
+        appId: "1:227353365436:web:e662600dac0e83fe6739b9" 
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.getElementById('currentDate').innerText = new Date().toLocaleDateString('ar-SA');
+
+    async function loadData() {
+        const querySnapshot = await getDocs(collection(db, "products"));
+        const tableBody = document.getElementById('tableBody');
+        let totalItems = 0;
+        let totalValue = 0;
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const cost = parseFloat(data.cost) || 0;
+            const stock = parseInt(data.stock) || 0;
+            const rowTotal = cost * stock;
+
+            totalItems += stock;
+            totalValue += rowTotal;
+
+            const row = `
+                <tr>
+                    <td class="item-name">${data.name}</td>
+                    <td>${cost.toFixed(1)}</td>
+                    <td>${stock}</td>
+                    <td>${rowTotal.toFixed(1)}</td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+
+        document.getElementById('summary').innerHTML = `
+            إجمالي القطع: ${totalItems} <br>
+            قيمة المخزن: ${totalValue.toFixed(2)} ريال
+        `;
+    }
+
+    loadData();
+</script>
+
+</body>
+</html>
